@@ -10,9 +10,27 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-from duplicity.globals import volsize
-from numpy.ma.core import sqrt
 
+def optimize(dt_start, dt_end, ls_symbols):        
+    print 'Optimize'
+    max_sharp = 0.0
+    best_alloc = []
+    
+    allocation_set = np.arange(0,1.1,0.1)
+    for i in allocation_set:
+        for j in allocation_set:
+            for k in allocation_set:
+                for l in allocation_set:
+                    if i+j+k+l == 1:
+                        na_allocations = np.array([i,j,k,l])
+                        vol, daily_ret, sharpe, cum_ret = simulate(dt_start, dt_end, ls_symbols, na_allocations)
+                        if sharpe > max_sharp:
+                            max_sharp = sharpe
+                            best_alloc = na_allocations
+    print 'Best sharp'
+    print max_sharp
+    return best_alloc
+    
 def simulate(dt_start, dt_end, ls_symbols, na_allocations):
     print 'Simulate'
     # We need closing prices so the timestamp should be hours=16.
@@ -21,7 +39,7 @@ def simulate(dt_start, dt_end, ls_symbols, na_allocations):
     # Get a list of trading days between the start and the end.
     ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
     # Creating an object of the dataaccess class with Yahoo as the source.
-    c_dataobj = da.DataAccess('Yahoo',cachestalltime=0)
+    c_dataobj = da.DataAccess('Yahoo')
 
     # Keys to be read from the data, it is good to read everything in one go.
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
@@ -56,19 +74,14 @@ def simulate(dt_start, dt_end, ls_symbols, na_allocations):
 
 def main():
     print 'Main'
-    ls_symbols = ['AXP', 'HPQ', 'IBM', 'HNZ']
-    dt_start = dt.datetime(2010, 1, 1)
-    dt_end = dt.datetime(2010, 12, 31)
+    ls_symbols = ['C', 'GS', 'IBM', 'HNZ']
+    dt_start = dt.datetime(2011, 1, 1)
+    dt_end = dt.datetime(2011, 12, 31)
     na_allocations = np.array([0.0, 0.0, 0.0, 1.0])
-    vol, daily_ret, sharpe, cum_ret = simulate(dt_start, dt_end, ls_symbols, na_allocations)
-    print 'Sharpe ratio '
-    print sharpe
-    print 'Volatility'
-    print vol
-    print 'Avg daily ret'
-    print np.average(daily_ret)
-    print 'Cumulative return'
-    print cum_ret
+    #vol, daily_ret, sharpe, cum_ret = simulate(dt_start, dt_end, ls_symbols, na_allocations)
+    best_alloc = optimize(dt_start, dt_end, ls_symbols)
+    print best_alloc
+    
     
 if __name__ == '__main__':
     main()
