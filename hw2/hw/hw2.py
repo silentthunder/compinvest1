@@ -61,7 +61,7 @@ if __name__ == '__main__':
     df_events_2008 = find_events_price_drops_below(ls_symbols_2008, d_data_2008, 5.0)
     print "Creating Study for 2008"
     ep.eventprofiler(df_events_2008, d_data_2008, i_lookback=20, i_lookforward=20,
-                s_filename='MyEventStudysp5002008threshold5.pdf', b_market_neutral=True, b_errorbars=True,
+                s_filename='output/MyEventStudysp5002008threshold5.pdf', b_market_neutral=True, b_errorbars=True,
                 s_market_sym='SPY')
     
     # calculations for sp5002008
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     df_events_2012 = find_events_price_drops_below(ls_symbols_2012, d_data_2012, 5.0)
     print "Creating Study for 2012"
     ep.eventprofiler(df_events_2012, d_data_2012, i_lookback=20, i_lookforward=20,
-                s_filename='MyEventStudysp5002012threshold5.pdf', b_market_neutral=True, b_errorbars=True,
+                s_filename='output/MyEventStudysp5002012threshold5.pdf', b_market_neutral=True, b_errorbars=True,
                 s_market_sym='SPY')
     
     # calculations for Q2: period 2008-2009, sp5002008, threshold 6.0
@@ -87,7 +87,7 @@ if __name__ == '__main__':
     df_events_2008 = find_events_price_drops_below(ls_symbols_2008, d_data_2008, 6.0)
     print "Creating Study for Q2"
     ep.eventprofiler(df_events_2008, d_data_2008, i_lookback=20, i_lookforward=20,
-                s_filename='MyEventStudyQ2sp5002008threshold6.pdf', b_market_neutral=True, b_errorbars=True,
+                s_filename='output/MyEventStudyQ2sp5002008threshold6.pdf', b_market_neutral=True, b_errorbars=True,
                 s_market_sym='SPY')
     
     # calculations for Q3: period 2008-2009, sp5002012, threshold 8.0
@@ -98,8 +98,21 @@ if __name__ == '__main__':
     d_data_2012 = dict(zip(ls_keys, ldf_data_2012))
     #remove_NAN_from_price_data(d_data_2012, ls_keys)
     df_events_2012 = find_events_price_drops_below(ls_symbols_2012, d_data_2012, 8.0)
-    print "Creating Study for 2012"
+    print "Creating Study for Q3"
     ep.eventprofiler(df_events_2012, d_data_2012, i_lookback=20, i_lookforward=20,
-                s_filename='MyEventStudyQ3sp5002012threshold8.pdf', b_market_neutral=True, b_errorbars=True,
+                s_filename='output/MyEventStudyQ3sp5002012threshold8.pdf', b_market_neutral=True, b_errorbars=True,
+                s_market_sym='SPY')
+    
+     # calculations for Q3 attempt 3: period 2008-2009, sp5002012, threshold 10.0
+    ls_symbols_2012 = dataobj.get_symbols_from_list('sp5002012')
+    ls_symbols_2012.append('SPY')    
+    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    ldf_data_2012 = dataobj.get_data(ldt_timestamps, ls_symbols_2012, ls_keys)
+    d_data_2012 = dict(zip(ls_keys, ldf_data_2012))
+    #remove_NAN_from_price_data(d_data_2012, ls_keys)
+    df_events_2012 = find_events_price_drops_below(ls_symbols_2012, d_data_2012, 10.0)
+    print "Creating Study for Q3"
+    ep.eventprofiler(df_events_2012, d_data_2012, i_lookback=20, i_lookforward=20,
+                s_filename='output/MyEventStudyQ3sp5002012threshold10.pdf', b_market_neutral=True, b_errorbars=True,
                 s_market_sym='SPY')
     
