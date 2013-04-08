@@ -13,6 +13,17 @@ def main(argv):
     print 'Orders\' file name:',ordersFilename
     print 'Values\' file name:',valuesFilename
     
+    #read CSV into "trades" array
+    
+    #scan trades for symbols and dates - built a list of symbols and a date range
+    
+    #Read in data (use adjusted close)
+    
+    #scan trades to update cash
+    
+    #scan trades to create ownership array & value
+    
+    #scan cash and value to create total fund value
     
 if __name__ == "__main__":
    main(sys.argv[1:])
