@@ -1,7 +1,12 @@
 #hw 3 part 1 & 2
 import sys
+import numpy as np
+import datetime as dt
 
-
+#QSTK imports
+import QSTK.qstkutil.DataAccess as da
+import QSTK.qstkutil.qsdateutil as du
+from test.test_iterlen import len
 
 def main(argv):
     print 'Number of arguments:', len(argv), 'arguments.'
@@ -14,14 +19,76 @@ def main(argv):
     print 'Values\' file name:',valuesFilename
     
     #read CSV into "trades" array
+    na_trades = np.loadtxt(ordersFilename, dtype={'names': ('Year','Month','Day', 'Symbol', 'txType', 'nShares'),
+                                                  'formats': ('i4', 'i4','i4', 'S5', 'S5','i4')}, delimiter=',')
+    #print(na_trades)
+    na_trades_norm = []
+    #print 'empty norm trades array', na_trades_norm
     
     #scan trades for symbols and dates - built a list of symbols and a date range
+    ls_symbols = []
+    ls_dates = []
+        
+    for record in na_trades:
+        ls_symbols.append(record[3])        
+        aDate = dt.datetime(record[0], record[1], record[2])
+        ls_dates.append(aDate)
+        na_trades_norm.append((aDate,record[3], record[4], record[5]));
+
+    #print 'norm trades ',na_trades_norm
+    na_trades_norm = sorted(na_trades_norm,key=lambda trade: trade[0])
+    #print 'norm trades sorted ',na_trades_norm
+    set_symbols = set(ls_symbols)
+    ls_dates = sorted(ls_dates)
+    dt_start = ls_dates[0]
+    dt_end = ls_dates[len(ls_dates)-1]
+    
+    print 'start date:',dt_start
+    print 'end_date:', dt_end
     
     #Read in data (use adjusted close)
+    c_dataobj = da.DataAccess('Yahoo')
+    dt_timeofday = dt.timedelta(hours=16)
     
+    ldt_timestamps = du.getNYSEdays(dt_start, dt_end+dt.timedelta(days=1), dt_timeofday)
+    #print 'timestamps=', ldt_timestamps
+    ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
+    ldf_data = c_dataobj.get_data(ldt_timestamps, set_symbols, ls_keys)
+    d_data = dict(zip(ls_keys, ldf_data))
+    df_actual_close = d_data['actual_close'].copy()
+    #print(df_actual_close)
+    #print(df_actual_close.index)
+
     #scan trades to update cash
+    ls_cash = []
+    currentCash = startingCash
+    for trade in na_trades_norm:
+        dt_date = trade[0]
+        symbol = trade[1]
+        txType = trade[2]
+        nShares = trade[3]
+        price = df_actual_close[symbol].ix[dt_date+dt_timeofday]
+        print 'Operation: ',txType,', stock: ', trade[1],', date: ', dt_date+dt_timeofday, ', price: ',  price,', amount: ',nShares
+        if (txType == 'Buy'):
+            currentCash -= (nShares*price)
+        else:
+            currentCash += (nShares*price)
+        ls_cash.append(currentCash)
+        
+    print 'ls_cash ', ls_cash
     
     #scan trades to create ownership array & value
+    print 'all symbols:',set_symbols 
+    np_ownership = np.zeros((len(na_trades_norm),len(set_symbols)))
+    print np_ownership
+    for trade in na_trades_norm:
+        dt_date = trade[0]
+        symbol = trade[1]
+        txType = trade[2]
+        nShares = trade[3]
+        if (symbol == 'Sell'):
+            nShares = -nShares
+        np_ownership[]
     
     #scan cash and value to create total fund value
     
