@@ -1,4 +1,4 @@
-#hw 3 part 1 & 2
+#hw 3 part 1
 import sys
 import numpy as np
 import datetime as dt
@@ -7,7 +7,7 @@ import pandas as pd
 #QSTK imports
 import QSTK.qstkutil.DataAccess as da
 import QSTK.qstkutil.qsdateutil as du
-from posixpath import samefile
+from _sortedlist import sortedset
 
 def main(argv):
     print 'Number of arguments:', len(argv), 'arguments.'
@@ -63,27 +63,35 @@ def main(argv):
     #scan trades to update cash
     ls_cash = []
     currentCash = startingCash
+    dt_prev_date = None
     for trade in na_trades_norm:
         dt_date = trade[0]
         symbol = trade[1]
         txType = trade[2]
         nShares = trade[3]
         price = df_actual_close[symbol].ix[dt_date+dt_timeofday]
-        print 'Operation: ',txType,', stock: ', trade[1],', date: ', dt_date+dt_timeofday, ', price: ',  price,', amount: ',nShares
+        #print 'Operation: ',txType,', stock: ', trade[1],', date: ', dt_date+dt_timeofday, ', price: ',  price,', amount: ',nShares
         if (txType == 'Buy'):
             currentCash -= (nShares*price)
         else:
             currentCash += (nShares*price)
-        print currentCash
+        #print currentCash
+        if (dt_date == dt_prev_date):
+            ls_cash.pop()
         ls_cash.append(currentCash)
+        dt_prev_date = dt_date
         
-    print 'ls_cash ', ls_cash
-    
+    #print 'ls_cash ', ls_cash
     #scan trades to create ownership array & value
     #print 'all symbols:',set_symbols
-    df_ownership = pd.DataFrame(np.zeros((len(na_trades_norm), len(set_symbols))), columns=set_symbols)
-    i = 0
+    set_dates = sortedset(ls_dates_sorted)
+    set_columns = set_symbols.copy()
+    set_columns.add('Value')
+    #index array must be sorted otherwise algorithm in the for loop won't work correctly
+    df_ownership = pd.DataFrame(np.zeros((len(set_dates), len(set_columns))), columns=set_columns, index=set_dates)
+    #print df_ownership
     ls_value = []
+    dt_prev_date = None
     for trade in na_trades_norm:
         dt_date = trade[0]
         symbol = trade[1]
@@ -91,35 +99,33 @@ def main(argv):
         nShares = trade[3]
         if (txType == 'Sell'):
             nShares = -nShares
-        if i == 0: 
-            df_ownership.ix[i].ix[symbol] = nShares
+        if dt_prev_date is None: 
+            df_ownership.ix[dt_date].ix[symbol] = nShares
         else:
             for stockSymbol in set_symbols:
                 #copy the previous state
-                df_ownership.ix[i].ix[stockSymbol] = df_ownership.ix[i-1].ix[stockSymbol]
-            df_ownership.ix[i].ix[symbol] += nShares
+                df_ownership.ix[dt_date].ix[stockSymbol] = df_ownership.ix[dt_prev_date].ix[stockSymbol]
+            df_ownership.ix[dt_date].ix[symbol] += nShares
         
-        assetsValueAfterTx = 0
-        for stockSymbol in set_symbols:
-            stockPrice = df_actual_close[stockSymbol].ix[dt_date+dt_timeofday]
-            assetsValueAfterTx += stockPrice * df_ownership.ix[i].ix[stockSymbol] 
+        dt_prev_date = dt_date
+    #valuation
+    for dt_date in df_ownership.index:
+        assetsValue = 0
+        for symbol in set_symbols:
+            stockPrice = df_actual_close[symbol].ix[dt_date+dt_timeofday]
+            assetsValue += stockPrice * df_ownership.ix[dt_date].ix[symbol] 
+        df_ownership.ix[dt_date].ix['Value'] = assetsValue
         
-        #df_ownership.ix[i].ix['Value'] = assetsValueAfterTx
-        ls_value.append(assetsValueAfterTx)
-        i += 1
-    print df_ownership
-    
     #scan cash and value to create total fund value
-    np_total_fund_value = np.array(ls_cash) + np.array(ls_value)
-    print np_total_fund_value
+    np_total_fund_value = np.array(ls_cash) + np.array(df_ownership['Value'])
+    #print np_total_fund_value
     
     #generate result file
     fout = open(valuesFilename, 'w')
     print ls_dates_sorted
     i = 0
-    for trade in na_trades_norm:
-        dt_date = trade[0]
-        
+    print df_ownership.index
+    for dt_date in df_ownership.index:
         line ='%d, %d, %d, %f\n' % (dt_date.year,dt_date.month,dt_date.day,np_total_fund_value[i]) 
         print line
         fout.write(line)
