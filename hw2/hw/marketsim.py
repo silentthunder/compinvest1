@@ -107,7 +107,7 @@ def main(argv):
         #TODO add vector to the current row in data frame
         for symbol in d_current_positions.keys():
             nSharesOfSymbol = d_current_positions[symbol]
-            print 'shares of symbol',symbol,'=',nSharesOfSymbol
+            #print 'shares of symbol',symbol,'=',nSharesOfSymbol
             df_ownership.ix[dt_date].ix[symbol] = nSharesOfSymbol
             if nSharesOfSymbol != 0:
                 stockPrice = df_actual_close[symbol].ix[dt_date]
