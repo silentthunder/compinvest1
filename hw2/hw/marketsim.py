@@ -29,10 +29,11 @@ def main(argv):
     #scan trades for symbols and dates - built a list of symbols and a date range
     ls_symbols = []
     ls_dates = []
+    dt_timeofday = dt.timedelta(hours=16)
     
     for record in na_trades:
         ls_symbols.append(record[3])        
-        aDate = dt.datetime(record[0], record[1], record[2])
+        aDate = dt.datetime(record[0], record[1], record[2]) + dt_timeofday
         ls_dates.append(aDate)
         na_trades_norm.append((aDate,record[3], record[4], record[5]));
 
@@ -49,80 +50,76 @@ def main(argv):
     
     #Read in data (use adjusted close)
     c_dataobj = da.DataAccess('Yahoo')
-    dt_timeofday = dt.timedelta(hours=16)
-    
-    ldt_timestamps = du.getNYSEdays(dt_start, dt_end+dt.timedelta(days=1), dt_timeofday)
+   
+    ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
     #print 'timestamps=', ldt_timestamps
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
     ldf_data = c_dataobj.get_data(ldt_timestamps, set_symbols, ls_keys)
     d_data = dict(zip(ls_keys, ldf_data))
     df_actual_close = d_data['close'].copy()
-    #print(df_actual_close)
-    #print(df_actual_close.index)
 
     #scan trades to update cash
     ls_cash = []
     currentCash = startingCash
-    dt_prev_date = None
-    for trade in na_trades_norm:
-        dt_date = trade[0]
-        symbol = trade[1]
-        txType = trade[2]
-        nShares = trade[3]
-        price = df_actual_close[symbol].ix[dt_date+dt_timeofday]
-        #print 'Operation: ',txType,', stock: ', trade[1],', date: ', dt_date+dt_timeofday, ', price: ',  price,', amount: ',nShares
-        if (txType == 'Buy'):
-            currentCash -= (nShares*price)
-        else:
-            currentCash += (nShares*price)
-        #print currentCash
-        if (dt_date == dt_prev_date):
-            ls_cash.pop()
+    i = 0
+    numberOftrades = len(na_trades_norm)
+    for dt_date in ldt_timestamps:
+        # if there are trades for dt_date
+        while  dt_date == na_trades_norm[i][0]:
+            symbol = na_trades_norm[i][1]
+            txType = na_trades_norm[i][2]
+            nShares = na_trades_norm[i][3]
+            price = df_actual_close[symbol].ix[dt_date]
+            if (txType == 'Buy'):
+                currentCash -= (nShares*price)
+            else:
+                currentCash += (nShares*price)
+            i = i+1
+            if (i == numberOftrades):
+                break
         ls_cash.append(currentCash)
-        dt_prev_date = dt_date
+    print ls_cash
         
     #print 'ls_cash ', ls_cash
     #scan trades to create ownership array & value
     #print 'all symbols:',set_symbols
-    set_dates = sortedset(ls_dates_sorted)
     set_columns = set_symbols.copy()
     set_columns.add('Value')
     #index array must be sorted otherwise algorithm in the for loop won't work correctly
-    df_ownership = pd.DataFrame(np.zeros((len(set_dates), len(set_columns))), columns=set_columns, index=set_dates)
+    df_ownership = pd.DataFrame(np.zeros((len(ldt_timestamps), len(set_columns))), columns=set_columns, index=ldt_timestamps)
     #print df_ownership
-    ls_value = []
-    dt_prev_date = None
-    for trade in na_trades_norm:
-        dt_date = trade[0]
-        symbol = trade[1]
-        txType = trade[2]
-        nShares = trade[3]
-        if (txType == 'Sell'):
-            nShares = -nShares
-        if dt_prev_date is None: 
-            df_ownership.ix[dt_date].ix[symbol] = nShares
-        else:
-            for stockSymbol in set_symbols:
-                #copy the previous state
-                df_ownership.ix[dt_date].ix[stockSymbol] = df_ownership.ix[dt_prev_date].ix[stockSymbol]
-            df_ownership.ix[dt_date].ix[symbol] += nShares
-        
-        dt_prev_date = dt_date
-    #valuation
-    for dt_date in df_ownership.index:
+    d_current_positions = dict(zip(set_symbols, np.zeros((len(set_symbols)))))
+    print d_current_positions
+    i = 0
+    for dt_date in ldt_timestamps:
+        # if there are trades for dt_date
+        while (dt_date == na_trades_norm[i][0]):
+            symbol = na_trades_norm[i][1]
+            txType = na_trades_norm[i][2]
+            nShares = na_trades_norm[i][3]
+            if (txType == 'Sell'):
+                nShares = -nShares
+            d_current_positions[symbol] += nShares
+            i = i+1
+            if (i == numberOftrades):
+                break
         assetsValue = 0
-        for symbol in set_symbols:
-            stockPrice = df_actual_close[symbol].ix[dt_date+dt_timeofday]
-            assetsValue += stockPrice * df_ownership.ix[dt_date].ix[symbol] 
+        #TODO add vector to the current row in data frame
+        for symbol in d_current_positions.keys():
+            nSharesOfSymbol = d_current_positions[symbol]
+            print 'shares of symbol',symbol,'=',nSharesOfSymbol
+            df_ownership.ix[dt_date].ix[symbol] = nSharesOfSymbol
+            if nSharesOfSymbol != 0:
+                stockPrice = df_actual_close[symbol].ix[dt_date]
+                assetsValue += stockPrice * nSharesOfSymbol
         df_ownership.ix[dt_date].ix['Value'] = assetsValue
-        
+    
     #scan cash and value to create total fund value
     np_total_fund_value = np.array(ls_cash) + np.array(df_ownership['Value'])
-    #print np_total_fund_value
+    print np_total_fund_value
     
     #generate result file
     fout = open(valuesFilename, 'w')
-    print ls_dates_sorted
     i = 0
     print df_ownership.index
     for dt_date in df_ownership.index:
