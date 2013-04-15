@@ -49,6 +49,7 @@ def main(argv):
     print 'end_date:', dt_end
     
     #Read in data (use adjusted close)
+    #c_dataobj = da.DataAccess('Yahoo', cachestalltime=0)
     c_dataobj = da.DataAccess('Yahoo')
    
     ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt_timeofday)
