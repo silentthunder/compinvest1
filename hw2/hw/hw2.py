@@ -95,7 +95,6 @@ if __name__ == '__main__':
     ls_symbols_2012 = dataobj.get_symbols_from_list('sp5002012')
     ls_symbols_2012.append('SPY')    
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
-    print
     ldf_data_2012 = dataobj.get_data(ldt_timestamps, ls_symbols_2012, ls_keys)
     d_data_2012 = dict(zip(ls_keys, ldf_data_2012))
     #remove_NAN_from_price_data(d_data_2012, ls_keys)
