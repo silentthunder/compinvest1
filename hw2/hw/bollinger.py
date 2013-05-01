@@ -12,7 +12,7 @@ import numpy as np
 
 import copy
 
-import hw2 as hw2
+from hw2 import generate_buy_and_sell_orders, serialize_trades 
 
 def bollinger_value(dt_start, dt_end,ls_symbols, n_days_lookback):
     # We need closing prices so the timestamp should be hours=16.
@@ -36,18 +36,7 @@ def bollinger_value(dt_start, dt_end,ls_symbols, n_days_lookback):
 def bollinger_value_int(d_data, n_days_lookback):    
     # Getting the numpy ndarray of close prices.
     df_price = d_data['close'].copy()
-    ls_symbols = df_price.columns
-    ldt_timestamps = df_price.index
-    #
-    n_data_size = len(ldt_timestamps)
-    n_symbols = len(ls_symbols)
 
-    df_sma = pd.DataFrame(np.zeros((n_data_size, n_symbols)), columns=ls_symbols, index=ldt_timestamps)
-    df_stddev_price = pd.DataFrame(np.zeros((n_data_size, n_symbols)), columns=ls_symbols, index=ldt_timestamps)
-    df_lower_band = pd.DataFrame(np.zeros((n_data_size, n_symbols)), columns=ls_symbols, index=ldt_timestamps)
-    df_upper_band = pd.DataFrame(np.zeros((n_data_size, n_symbols)), columns=ls_symbols, index=ldt_timestamps)
-    df_bollinger_val = pd.DataFrame(np.zeros((n_data_size, n_symbols)), columns=ls_symbols, index=ldt_timestamps)
-    
     df_sma =  pd.rolling_mean(df_price, n_days_lookback)
     df_stddev_price = pd.rolling_std(df_price, n_days_lookback)
     df_upper_band = df_sma + df_stddev_price
@@ -125,18 +114,18 @@ def main():
     s_sym_mkt_idx = 'SPY'
     ls_symbols.append(s_sym_mkt_idx)
     n_days_lookback = 20
-    
+     
     ldt_timestamps = du.getNYSEdays(dt_start, dt_end, dt.timedelta(hours=16))
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
     ldf_data = dataobj.get_data(ldt_timestamps, ls_symbols, ls_keys)
     d_data = dict(zip(ls_keys, ldf_data))
-
-    (df_price, df_sma, df_upper_band, df_lower_band, df_bollinger_val) = bollinger_value_int(d_data, n_days_lookback)     
-    df_events = find_events(df_bollinger_val, n_bval_sym_daily_drop_threshold, s_sym_mkt_idx, n_bval_mktindex_above)
-    print "Creating Study for HW6 test"
-    ep.eventprofiler(df_events, d_data, i_lookback=20, i_lookforward=20,
-                s_filename='output/MyEventStudyHW6test.pdf', b_market_neutral=True, b_errorbars=True,
-                s_market_sym=s_sym_mkt_idx)
+# 
+#     (df_price, df_sma, df_upper_band, df_lower_band, df_bollinger_val) = bollinger_value_int(d_data, n_days_lookback)     
+#     df_events = find_events(df_bollinger_val, n_bval_sym_daily_drop_threshold, s_sym_mkt_idx, n_bval_mktindex_above)
+#     print "Creating Study for HW6 test"
+#     ep.eventprofiler(df_events, d_data, i_lookback=20, i_lookforward=20,
+#                 s_filename='output/MyEventStudyHW6test.pdf', b_market_neutral=True, b_errorbars=True,
+#                 s_market_sym=s_sym_mkt_idx)
     
     # HW6 Q1
     # Bollinger value of equity today < -2.0 
@@ -147,14 +136,52 @@ def main():
     # * Using the symbol list - SP5002012 
     # * Using adjusted_close to create Bollinger bands 
     # * 20 day lookback Bollinger bands 
+#     n_bval_sym_daily_drop_threshold = -2.0
+#     n_bval_mktindex_above = 1.5
+#     df_events = find_events(df_bollinger_val, n_bval_sym_daily_drop_threshold, s_sym_mkt_idx, n_bval_mktindex_above)
+#     print "Creating Study for HW6 Q1"
+#     ep.eventprofiler(df_events, d_data, i_lookback=20, i_lookforward=20,
+#                 s_filename='output/MyEventStudyHW6Q1.pdf', b_market_neutral=True, b_errorbars=True,
+#                 s_market_sym=s_sym_mkt_idx)
+    # HW 7 test
+    # Event:
+    # Bollinger value for the equity today <= -2.0
+    # Bollinger value for the equity yesterday >= -2.0
+    # Bollinger value for SPY today >= 1.0
+    # Startdate: 1 Jan 2008
+    # Enddate: 31 Dec 2009
+    # 20 day lookback for Bollinger bands
+    # Symbol list: SP5002012
+    # Starting cash: $100,000
+    # When an event occurs, buy 100 shares of the equity on that day.
+    # Sell automatically 5 trading days later.
+#     n_bval_sym_daily_drop_threshold = -2.0
+#     n_bval_mktindex_above = 1.0
+#     (df_price, df_sma, df_upper_band, df_lower_band, df_bollinger_val) = bollinger_value_int(d_data, n_days_lookback)     
+#     df_events = find_events(df_bollinger_val, n_bval_sym_daily_drop_threshold, s_sym_mkt_idx, n_bval_mktindex_above)
+#     ls_trades = generate_buy_and_sell_orders(df_events, n_amount = 100, n_days_to_sell = 5)
+#     print 'number of trades generated: ', len(ls_trades)
+#     serialize_trades('output/orders_hw7_test.csv', ls_trades)
+    
+    # HW7 Q1
+    # Bollinger value of equity today < -2.0 
+    # Bollinger value of equity yesterday >= -2.0
+    # Bollinger value of SPY today >= 1.3
+    # Startdate: 1 Jan 2008
+    # Enddate: 31 Dec 2009
+    # 20 day lookback for Bollinger bands
+    # Symbol list: SP5002012
+    # Starting cash: $100,000
+    # When an event occurs, buy 100 shares of the equity on that day.
+    # Sell automatically 5 trading days later.
     n_bval_sym_daily_drop_threshold = -2.0
-    n_bval_mktindex_above = 1.5
+    n_bval_mktindex_above = 1.3
+    (df_price, df_sma, df_upper_band, df_lower_band, df_bollinger_val) = bollinger_value_int(d_data, n_days_lookback)     
     df_events = find_events(df_bollinger_val, n_bval_sym_daily_drop_threshold, s_sym_mkt_idx, n_bval_mktindex_above)
-    print "Creating Study for HW6 Q1"
-    ep.eventprofiler(df_events, d_data, i_lookback=20, i_lookforward=20,
-                s_filename='output/MyEventStudyHW6Q1.pdf', b_market_neutral=True, b_errorbars=True,
-                s_market_sym=s_sym_mkt_idx)
-   
+    ls_trades = generate_buy_and_sell_orders(df_events, n_amount = 100, n_days_to_sell = 5)
+    print 'number of trades generated: ', len(ls_trades)
+    serialize_trades('output/orders_hw7_q1.csv', ls_trades)
+    
     
 if __name__ == '__main__':
     main()
