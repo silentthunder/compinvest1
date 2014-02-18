@@ -91,7 +91,7 @@ if __name__ == '__main__':
 
     dataobj = da.DataAccess('Yahoo')
     
-     # HW4 period 2008-2009, sp5002012, threshold 5.0
+    # HW4 period 2008-2009, sp5002012, threshold 5.0
     ls_symbols_2012 = dataobj.get_symbols_from_list('sp5002012')
     ls_symbols_2012.append('SPY')    
     ls_keys = ['open', 'high', 'low', 'close', 'volume', 'actual_close']
@@ -100,9 +100,9 @@ if __name__ == '__main__':
     #remove_NAN_from_price_data(d_data_2012, ls_keys)
     df_events_2012 = find_events_price_drops_below(ls_symbols_2012, d_data_2012, 6.0)
     #print "Creating Study for HW4"
-    #ep.eventprofiler(df_events_2012, d_data_2012, i_lookback=20, i_lookforward=20,
-    #            s_filename='output/MyEventStudyHW4sp5002012threshold5.pdf', b_market_neutral=True, b_errorbars=True,
-    #            s_market_sym='SPY')
+    ep.eventprofiler(df_events_2012, d_data_2012, i_lookback=20, i_lookforward=20,
+                s_filename='output/MyEventStudyHW4sp5002012threshold5.pdf', b_market_neutral=True, b_errorbars=True,
+                s_market_sym='SPY')
     ls_trades = generate_buy_and_sell_orders(df_events_2012, 100, 5)
     print 'number of trades generated: ', len(ls_trades)
     serialize_trades('output/orders_hw4_q2.csv', ls_trades)
